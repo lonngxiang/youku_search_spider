@@ -1,0 +1,82 @@
+import requests
+import re
+from lxml import etree
+import pymysql
+import json
+
+
+
+
+
+def down_html(key_word, page_id, aaid):
+    """
+    @param key_word:关键词
+    @param page_id:页码
+    @return:请求下载网页源代码
+    """
+    url = 'https://search.youku.com/api/search?keyword={}&aaid={}&pg={}'.format(key_word, aaid, page_id)
+    headers = {
+        #         "authority":"so.youku.com",
+        #         "path":"/search_video/q_%E7%96%AF%E7%8B%82%E7%9A%84%E5%A4%96%E6%98%9F%E4%BA%BA?aaid=009674d8139ea442b1b94d55a9ab4a5c",
+        # "cookie": "UM_distinctid=16ecb42f3159a9-004f1d77e8c677-3964720e-1fa400-16ecb42f316185; cna=6SNtFt3Ei0sCAd6B9crKUt4o; __ysuid=1575368193116MY7; __ayft=1575368193117; __aysid=1575368193118UcA; __ayscnt=1; ctoken=EtSf0_WbXss0zkzLxLyLtVVj; juid=01dr5kvfbp2pbe; referhost=https%3A%2F%2Fso.tv.sohu.com; ycid=0; __aryft=1575429411; seid=01dr7ujtgb4qc; yseid=1575446246980a9W8oG; yseidcount=2; __arycid=dz-1-00; __arcms=dz-1-00; seidtimeout=1575448144028; ypvid=1575446344101jb4yrI; ysestep=4; yseidtimeout=1575453544104; ystep=5; __ayvstp=14; __aysvstp=14; _m_h5_c=bb7cffa0bc8d0efd02e560ab2c3320c2_1575455047683%3B0637f6b24fdc1496b006cada27f1ea2a; P_ck_ctl=765FB43C7CEFE04333249F9A65582997; _m_h5_tk=7922b0e2062870091f5ec3382fad4b29_1575619666666; _m_h5_tk_enc=db1648b78694acb965e157af2a1807b9; CNZZDATA1277958921=1964740184-1575366691-https%253A%252F%252Fmovie.youku.com%252F%7C1575615091; __arpvid=1575615587732RFVotd-1575615587750; __aypstp=39; __ayspstp=39; isg=BGtrPnqZslsVoO6A-xqyiIwa-olVgH8C-fZcxd3oAKoBfIveZVJLUgpO1Py3x9f6",
+        "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36"
+
+    }
+
+    html = requests.get(url=url, headers=headers, allow_redirects=False).text
+    # print(html.status_code)
+    return json.loads(html)
+    #     print(html.headers["location"])
+    # if html.status_code == 302:
+    #     new_id_url = "https://so.youku.com" + html.headers["location"]
+    #     print(new_id_url)
+    #     new_html = requests.get(url=new_id_url, headers=headers).text
+    #     return new_id_url, new_html
+    # else:
+    #     print("++++++++++++++++")
+    #     print(url)
+    #     # print(requests.get(url=url,headers=headers1).text)
+    #     print(html.text)
+    #     return html.text
+
+
+
+def down_detail(key_word):
+    # try:
+    html1 = requests.get("https://search.youku.com/search_video?keyword={}".format(key_word)).text
+    # print(html1)
+    aaid = re.findall('aaid&quot;:&quot;(.*?)&quot;',html1)[0]
+    print(aaid)
+    for i in range(3):
+        print("*"*10,"第%d页"%(i+1))
+
+        new_html = down_html(key_word, i + 1,aaid)
+        for j in range(len(new_html['pageComponentList'])):
+            #     print(j)
+            try:
+                title = new_html['pageComponentList'][j]['commonData']['action']['report']['trackInfo']['object_title']
+                showId = new_html['pageComponentList'][j]['commonData']['showId']
+                poster_url = new_html['pageComponentList'][j]['commonData']['posterDTO']['vThumbUrl']
+                time_cost = ""
+                poster_icon = ""
+                vedio_url = "https://v.youku.com/v_nextstage/id_{}.html".format(showId)
+                vedio_info = ""
+                print(title,poster_url,vedio_url)
+
+            except:
+                title = new_html['pageComponentList'][j]['componentMap']['1005']['data'][0]['titleDTO']['displayName']
+                showId = new_html['pageComponentList'][j]['componentMap']['1005']['data'][0]['videoId']
+                poster_url = new_html['pageComponentList'][j]['componentMap']['1005']['data'][0]['screenShotDTO']['thumbUrl']
+                time_cost = new_html['pageComponentList'][j]['componentMap']['1005']['data'][0]['screenShotDTO']['rightBottomText']
+                poster_icon = ""
+                vedio_url = "https://v.youku.com/v_show/id_{}.html".format(showId)
+                vedio_info = ""
+                print(title,time_cost,poster_url,vedio_url)
+                pass
+
+
+
+
+if __name__ == "__main__":
+
+    down_detail("黑暗宇宙")
